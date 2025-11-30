@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "jest"
+    "test": "jest",
+    "prepare": "husky"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -23,6 +24,7 @@
   "author": "AI Assistant",
   "license": "MIT",
   "devDependencies": {
+    "husky": "^9.1.7",
     "jest": "^30.2.0",
     "supertest": "^7.1.4"
   },
