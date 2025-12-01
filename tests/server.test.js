@@ -11,7 +11,7 @@ jest.mock('yahoo-finance2', () => ({
   default: jest.fn(() => mockYahooFinanceInstance)
 }));
 
-const app = require('../server.js');
+const app = require('../src/server.js');
 
 describe('Stock Analysis Endpoint /analyze/:symbol', () => {
   beforeEach(() => {
