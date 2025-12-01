@@ -170,7 +170,7 @@
       loading.classList.remove('hidden');
 
       try {
-        const response = await fetch(`/analyze/${symbol}`);
+        const response = await fetch(`/api/analyze/${symbol}`);
         const data = await response.json();
 
         loading.classList.add('hidden');

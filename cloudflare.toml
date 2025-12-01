@@ -1,0 +1,6 @@
+name = "ai-stock-picker"
+
+[build]
+command = ""
+output = "public"
+functions = "functions"
