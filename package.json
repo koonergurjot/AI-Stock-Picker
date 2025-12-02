@@ -7,7 +7,8 @@
     "start": "node src/server.js",
     "test": "jest",
     "prepare": "husky",
-    "deploy": "git add . && git commit -m \"Auto-update by Roo\" && git push"
+    "deploy": "git add . && git commit -m \"Auto-update by Roo\" && git push",
+    "build": "true"
   },
   "dependencies": {
     "cors": "^2.8.5",
