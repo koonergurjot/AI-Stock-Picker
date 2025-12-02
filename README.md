@@ -106,3 +106,51 @@ nodejs, express, stock-analysis, rsi, sma, finance, yahoo-finance, deployment, a
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE)
+
+## 🚀 Deployment to Cloudflare Pages
+
+### 1. Install Wrangler
+```bash
+npm install -g wrangler
+```
+(or `npm i -D wrangler` for project-local installation)
+
+### 2. Local Testing
+```bash
+npm run dev:pages
+```
+This opens a local dev server. Test the API endpoint: `/api/analyze/AAPL`.
+
+### 3. Deploy
+```bash
+npm run deploy
+```
+Uploads your project to Cloudflare Pages. Requires authentication via `wrangler login` first.
+
+### Note
+Ensure your Cloudflare account is linked and the project name in [`wrangler.toml`](wrangler.toml) matches your Pages project name.
+## Cloudflare Pages GitHub Auto-Deploy Setup
+
+1. Log in to [Cloudflare dashboard](https://dash.cloudflare.com).
+
+2. Navigate to **Pages** > **Create a project** > **Connect to Git** > **Authorize GitHub** > Select this repo (**AI Stock Picker**).
+
+3. **Production branch**: `main`.
+
+4. **Framework preset**: None.
+
+5. **Build command**: (leave blank; [`wrangler.toml`](wrangler.toml) handles).
+
+6. **Build output directory**: `public`.
+
+7. Click **"Save and Deploy"**.
+
+Pages project created/linked; future pushes to `main` auto-trigger builds/deploys (uses [`cloudflare.toml`](cloudflare.toml)/[`wrangler.toml`](wrangler.toml)).
+
+**Note**: First deploy creates Pages URL (e.g., `ai-stock-picker.pages.dev`). Test: make change, `git commit` (triggers husky test+push), check **Pages deployments tab**.
+
+## Roo Auto-Update Workflow
+
+- After Roo/code mode changes: `npm run push:roo` (adds, tests, commits, pushes to main).
+- Triggers: husky (test+push redundant but safe), GitHub Actions CI, Cloudflare Pages auto-build/deploy.
+- Alternative: `git add . && git commit -m "Update"` (uses husky).
