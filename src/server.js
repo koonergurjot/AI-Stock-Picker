@@ -75,7 +75,7 @@ function calculateRSI(closes, period = 14) {
   return 100 - (100 / (1 + rs));
 }
 
-app.get('/analyze/:symbol', async (req, res) => {
+app.get('/api/analyze/:symbol', async (req, res) => {
   let symbol = req.params.symbol.toUpperCase();
 
   if (!/^[A-Z0-9.-]{1,10}$/.test(symbol)) {

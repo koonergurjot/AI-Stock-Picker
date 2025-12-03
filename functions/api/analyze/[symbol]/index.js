@@ -1,7 +1,5 @@
 import YahooFinance from 'yahoo-finance2';
-import NodeCache from 'node-cache';
-
-const cache = new NodeCache({ stdTTL: 900, checkperiod: 120 });
+const cache = new Map();
 
 function calculateRSI(closes, period = 14) {
   if (closes.length < period + 1) {
@@ -46,6 +44,8 @@ export default {
 
     const url = new URL(request.url);
     let symbol = decodeURIComponent(url.pathname.split('/').pop()).toUpperCase();
+
+    console.log(`Function called for ${symbol}`);
 
     if (!/^[A-Z0-9.-]{1,10}$/.test(symbol)) {
       return new Response(JSON.stringify({ error: 'Invalid symbol format. Use 1-10 alphanumeric chars, dots, hyphens.' }), {
