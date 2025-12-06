@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Stock Picker - Bloomberg Terminal</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * {
       margin: 0;
@@ -149,6 +150,8 @@
       <div id="signal" class="recommendation">HOLD</div>
     </div>
     
+    <canvas id="priceChart" width="600" height="300" class="hidden"></canvas>
+    
     <div id="error" class="hidden error"></div>
   </div>
 
@@ -166,6 +169,7 @@
 
       // Hide previous
       results.classList.add('hidden');
+      document.getElementById('priceChart').classList.add('hidden');
       error.classList.add('hidden');
       loading.classList.remove('hidden');
 
@@ -185,6 +189,43 @@
           signalEl.className = 'recommendation ' + data.signal.toLowerCase().replace(' ', '-');
 
           results.classList.remove('hidden');
+          
+          // Create chart
+          const ctx = document.getElementById('priceChart').getContext('2d');
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: data.historical.map(h => h.date),
+              datasets: [{
+                label: 'Close Price',
+                data: data.historical.map(h => h.close),
+                borderColor: '#00ff41',
+                backgroundColor: 'rgba(0, 255, 65, 0.1)',
+                tension: 0.1,
+                fill: true
+              }]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: false,
+                  ticks: { color: '#00ff41' },
+                  grid: { color: 'rgba(0, 255, 65, 0.1)' }
+                },
+                x: {
+                  ticks: { color: '#00ff41', maxRotation: 45 },
+                  grid: { color: 'rgba(0, 255, 65, 0.1)' }
+                }
+              },
+              plugins: {
+                legend: { labels: { color: '#00ff41' } }
+              },
+              elements: { point: { radius: 0 } }
+            }
+          });
+          
+          document.getElementById('priceChart').classList.remove('hidden');
         } else {
           error.textContent = data.error || 'Unknown error';
           error.classList.remove('hidden');

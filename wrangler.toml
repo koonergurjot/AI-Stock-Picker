@@ -1,3 +1,11 @@
 name = "ai-stock-picker"
 compatibility_date = "2025-01-01"
 pages_build_output_dir = "./public"
+
+[vars]
+API_KEY = "YOUR_API_KEY_HERE"  # Replace with actual API key
+
+[[kv_namespaces]]
+binding = "TOP_PICKS_KV"
+id = "TOP_PICKS_KV_ID"  # Create via `wrangler kv:namespace create TOP_PICKS_KV`
+preview_id = "TOP_PICKS_KV_PREVIEW_ID"

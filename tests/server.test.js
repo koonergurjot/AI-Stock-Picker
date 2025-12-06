@@ -1,4 +1,5 @@
-const request = require('supertest');
+import request from 'supertest';
+import { jest } from '@jest/globals';
 
 // Shared mock instance
 const mockYahooFinanceInstance = {
@@ -7,13 +8,17 @@ const mockYahooFinanceInstance = {
 };
 
 // Mock the yahoo-finance2 module to return shared mock instance
-jest.mock('yahoo-finance2', () => ({
+jest.unstable_mockModule('yahoo-finance2', () => ({
   default: jest.fn(() => mockYahooFinanceInstance)
 }));
 
- // const app = require('../src/server.js');
+// Import app after setting up mocks
+let app;
+beforeAll(async () => {
+  app = (await import('../src/server.js')).default;
+});
 
-describe.skip('Stock Analysis Endpoint /analyze/:symbol', () => {
+describe('Stock Analysis Endpoint /analyze/:symbol', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -29,7 +34,7 @@ describe.skip('Stock Analysis Endpoint /analyze/:symbol', () => {
     const closes = [170, 165, 160, 155, 150, 145, 140, 135, 130, 125, 120, 115, 110, 105, 100];
     mockYahooFinanceInstance.historical.mockResolvedValue(generateHistoricalData(closes));
 
-    const res = await request(app).get('/analyze/AAPL').expect(200);
+    const res = await request(app).get('/api/analyze/AAPL').expect(200);
 
     expect(res.body.currentPrice).toBe(150);
     expect(res.body.rsi).toBeLessThan(30);
@@ -42,7 +47,7 @@ describe.skip('Stock Analysis Endpoint /analyze/:symbol', () => {
     const closes = [100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170];
     mockYahooFinanceInstance.historical.mockResolvedValue(generateHistoricalData(closes));
 
-    const res = await request(app).get('/analyze/TSLA').expect(200);
+    const res = await request(app).get('/api/analyze/TSLA').expect(200);
 
     expect(res.body.currentPrice).toBe(200);
     expect(res.body.rsi).toBeGreaterThan(70);
@@ -59,7 +64,7 @@ describe.skip('Stock Analysis Endpoint /analyze/:symbol', () => {
 
     mockYahooFinanceInstance.historical.mockResolvedValue(historicalData);
 
-    const res = await request(app).get('/analyze/MSFT').expect(200);
+    const res = await request(app).get('/api/analyze/MSFT').expect(200);
 
     expect(res.body.currentPrice).toBe(100);
     expect(res.body.rsi).toBeCloseTo(50, 1);
@@ -69,7 +74,7 @@ describe.skip('Stock Analysis Endpoint /analyze/:symbol', () => {
   it('should return 404 for invalid symbol (no price)', async () => {
     mockYahooFinanceInstance.quote.mockResolvedValue({});
 
-    const res = await request(app).get('/analyze/INVALID').expect(404);
+    const res = await request(app).get('/api/analyze/INVALID').expect(404);
 
     expect(res.body.error).toBe('Invalid symbol or no data available');
   });
@@ -78,7 +83,7 @@ describe.skip('Stock Analysis Endpoint /analyze/:symbol', () => {
     mockYahooFinanceInstance.quote.mockResolvedValue({ regularMarketPrice: 150 });
     mockYahooFinanceInstance.historical.mockResolvedValue([]);
 
-    const res = await request(app).get('/analyze/EMPTY').expect(404);
+    const res = await request(app).get('/api/analyze/EMPTY').expect(404);
 
     expect(res.body.error).toBe('Insufficient historical data');
   });
@@ -88,7 +93,7 @@ describe.skip('Stock Analysis Endpoint /analyze/:symbol', () => {
     const shortCloses = Array(14).fill(150); // 14 closes = 13 changes < 15 needed
     mockYahooFinanceInstance.historical.mockResolvedValue(generateHistoricalData(shortCloses));
 
-    const res = await request(app).get('/analyze/SHORT').expect(404);
+    const res = await request(app).get('/api/analyze/SHORT').expect(404);
 
     expect(res.body.error).toBe('Insufficient data for RSI calculation (need at least 15 days)');
   });
