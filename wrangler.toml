@@ -4,8 +4,16 @@ pages_build_output_dir = "./public"
 
 [vars]
 API_KEY = "YOUR_API_KEY_HERE"  # Replace with actual API key
+CURRENCY_API_KEY = "YOUR_CURRENCY_API_KEY"  # Replace with FX API key
+ENVIRONMENT = "production"  # Set to "development" for local testing
 
 [[kv_namespaces]]
 binding = "TOP_PICKS_KV"
 id = "TOP_PICKS_KV_ID"  # Create via `wrangler kv:namespace create TOP_PICKS_KV`
 preview_id = "TOP_PICKS_KV_PREVIEW_ID"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ai-stock-picker-db"
+database_id = "YOUR_D1_DATABASE_ID"  # Create via `wrangler d1 create ai-stock-picker-db`
+preview_database_id = "YOUR_D1_PREVIEW_DATABASE_ID"  # Optional: for preview environment
