@@ -88,11 +88,23 @@ function cleanApiResponse(data, provider) {
       const quote = data['Global Quote'];
       return {
         symbol: quote['01. symbol'],
+        currency: 'CAD', // Assume CAD for TSX, but could be detected
         open: quote['02. open'],
         high: quote['03. high'],
         low: quote['04. low'],
         price: quote['05. price'],
         volume: quote['06. volume']
+      };
+    case 'tmx':
+      // Assuming TMX response structure - adjust based on actual API
+      return {
+        symbol: data.symbol,
+        currency: 'CAD',
+        price: data.lastPrice,
+        open: data.openPrice,
+        high: data.highPrice,
+        low: data.lowPrice,
+        volume: data.volume
       };
     case 'yahoo':
     default:

@@ -18,6 +18,7 @@ AI Stock Picker is an innovative, AI-driven platform designed to democratize sto
 - Top stock picks generation
 - Watchlist management
 - Real-time market data integration
+- TSX (Toronto Stock Exchange) support with CAD currency
 - Responsive web interface
 
 ## Technology Stack
