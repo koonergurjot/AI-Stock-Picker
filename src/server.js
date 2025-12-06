@@ -1,10 +1,10 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import 'dotenv/config';
 
-const YahooFinance = require('yahoo-finance2').default;
-const winston = require('winston');
-const NodeCache = require('node-cache');
+import YahooFinance from 'yahoo-finance2';
+import winston from 'winston';
+import NodeCache from 'node-cache';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -92,18 +92,16 @@ app.get('/api/analyze/:symbol', async (req, res) => {
   }
 });
 
-if (require.main === module) {
-  const server = app.listen(PORT, () => {
-    logger.info(`Server running on http://localhost:${PORT}`);
-  });
+const server = app.listen(PORT, () => {
+  logger.info(`Server running on http://localhost:${PORT}`);
+});
 
-  server.on('error', (err) => {
-    logger.error(`Server failed to start: ${err.message}`);
-    if (err.code === 'EADDRINUSE') {
-      logger.error(`Port ${PORT} is already in use. Try killing the process or set a different PORT env var.`);
-    }
-    process.exit(1);
-  });
-}
+server.on('error', (err) => {
+  logger.error(`Server failed to start: ${err.message}`);
+  if (err.code === 'EADDRINUSE') {
+    logger.error(`Port ${PORT} is already in use. Try killing the process or set a different PORT env var.`);
+  }
+  process.exit(1);
+});
 
 export default app;

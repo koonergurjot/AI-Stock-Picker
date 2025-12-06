@@ -2,16 +2,12 @@
   "type": "module",
   "name": "ai-stock-picker",
   "version": "1.0.0",
-  "description": "Robust Stock Market Analysis App with SMA, RSI signals",
+  "description": "Minimal Stock Market Analysis App",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "test": "jest",
-    "prepare": "husky",
     "dev:pages": "wrangler pages dev",
-    "deploy": "wrangler pages deploy",
-    "build": "true",
-    "push:roo": "git add . && npm test && git commit -m \"Update from Roo\" && git push origin main"
+    "deploy": "wrangler pages deploy"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -29,23 +25,5 @@
     "finance"
   ],
   "author": "AI Assistant",
-  "license": "MIT",
-  "devDependencies": {
-    "@babel/core": "^7.28.5",
-    "@babel/preset-env": "^7.28.5",
-    "husky": "^9.1.7",
-    "jest": "^30.2.0",
-    "supertest": "^7.1.4"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "transform": {
-      "^.+\\.[t|j]sx?$": "babel-jest"
-    },
-    "extensionsToTreatAsEsm": [".js"],
-    "transformIgnorePatterns": [],
-    "moduleNameMapper": {
-      "^(\\.{1,2}/.*)\\.js$": "$1"
-    }
-  }
+  "license": "MIT"
 }
