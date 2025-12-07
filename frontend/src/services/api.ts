@@ -1,5 +1,3 @@
-import { StockData } from '../context/StockContext'
-
 const API_BASE_URL = '/api'
 
 export interface AnalysisResponse {

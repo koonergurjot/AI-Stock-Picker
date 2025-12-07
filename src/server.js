@@ -7,13 +7,19 @@ import winston from 'winston';
 import NodeCache from 'node-cache';
 
 // Import new database and caching services
-import { createDatabaseService } from './lib/database/DatabaseService.js';
-import { CacheManager } from './lib/cache/CacheManager.js';
-import { CurrencyService } from './lib/data/CurrencyService.js';
-import { DataNormalizer } from './lib/data/DataNormalizer.js';
+import { createDatabaseService } from '../lib/database/DatabaseService.js';
+import { CacheManager } from '../lib/cache/CacheManager.js';
+import { CurrencyService } from '../lib/data/CurrencyService.js';
+import { DataNormalizer } from '../lib/data/DataNormalizer.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Check for Jest environment
+const isJest = !!process.env.JEST_WORKER_ID ||
+               !!process.env.JEST_JUNIT_OUTPUT_DIR ||
+               typeof globalThis !== 'undefined' && globalThis.jasmine !== undefined ||
+               typeof process.env.NODE_ENV === 'string' && process.env.NODE_ENV.includes('test');
 
 // Winston logger setup
 const logger = winston.createLogger({
@@ -36,6 +42,13 @@ const logger = winston.createLogger({
   ]
 });
 
+logger.info(`[DEBUG] Environment check:`, {
+  isJest,
+  nodeEnv: process.env.NODE_ENV,
+  jestWorkerId: process.env.JEST_WORKER_ID,
+  jestJunitOutputDir: process.env.JEST_JUNIT_OUTPUT_DIR
+});
+
 // NodeCache setup (15 min TTL) - Keep for backward compatibility
 const cache = new NodeCache({ stdTTL: 900, checkperiod: 120 });
 
@@ -47,14 +60,25 @@ let dataNormalizer = null;
 
 try {
   // Initialize services
+  logger.info(`[DEBUG] Initializing services with environment: ${process.env.ENVIRONMENT || 'development'}`);
   dbService = createDatabaseService(null, process.env.ENVIRONMENT);
+  logger.info(`[DEBUG] Database service created: ${dbService ? 'success' : 'failed'}`);
+
   cacheManager = new CacheManager(dbService);
+  logger.info(`[DEBUG] Cache manager created: ${cacheManager ? 'success' : 'failed'}`);
+
   currencyService = new CurrencyService(dbService);
+  logger.info(`[DEBUG] Currency service created: ${currencyService ? 'success' : 'failed'}`);
+
   dataNormalizer = new DataNormalizer(dbService);
-  
+  logger.info(`[DEBUG] Data normalizer created: ${dataNormalizer ? 'success' : 'failed'}`);
+
   logger.info('Database and caching services initialized');
 } catch (error) {
-  logger.error('Failed to initialize services', { error: error.message });
+  logger.error('Failed to initialize services', {
+    error: error.message,
+    stack: error.stack
+  });
 }
 
 app.use(cors());
@@ -76,7 +100,7 @@ app.get('/health/database', async (req, res) => {
 
     const health = await dbService.getHealthReport();
     const cacheStats = cacheManager.getStats();
-    
+
     res.json({
       ...health,
       cache: {
@@ -101,14 +125,14 @@ app.get('/metrics/cache', async (req, res) => {
   try {
     const stats = cacheManager.getStats();
     const health = cacheManager.getHealthStatus();
-    
+
     res.json({
       cache: stats,
       health,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    logger.error('Cache metrics failed', { error: error.message });
+    logger.error('Cache metrics failed', { error: error.message, stack: error.stack });
     res.status(500).json({
       error: error.message,
       timestamp: new Date().toISOString()
@@ -129,7 +153,7 @@ app.get('/metrics/performance', async (req, res) => {
     const freshness = await dbService.getDataFreshness();
     const quality = await dbService.getDataQuality();
     const cachePerf = await dbService.getCachePerformance();
-    
+
     res.json({
       dataFreshness: freshness,
       dataQuality: quality,
@@ -154,17 +178,29 @@ app.get('/api/analyze/:symbol', async (req, res) => {
   }
 
   const cacheKey = `analyze_${symbol}`;
-  
+
   try {
+    logger.info(`[DEBUG] Starting analysis for ${symbol}, cacheKey: ${cacheKey}`);
+    logger.info(`[DEBUG] cacheManager exists: ${!!cacheManager}, dbService exists: ${!!dbService}`);
+
     // 1. Check new cache manager first
     if (cacheManager) {
-      const cached = await cacheManager.get(cacheKey);
-      if (cached) {
-        logger.info(`[NEW CACHE HIT] ${symbol}`);
-        return res.json(cached);
+      logger.info(`[DEBUG] Checking cache manager for ${symbol}`);
+      try {
+        const cached = await cacheManager.get(cacheKey);
+        if (cached) {
+          logger.info(`[NEW CACHE HIT] ${symbol}`);
+          return res.json(cached);
+        }
+      } catch (cacheError) {
+        logger.error(`[DEBUG] Cache manager error for ${symbol}`, {
+          error: cacheError.message
+        });
       }
+    } else {
+      logger.warn(`[DEBUG] Cache manager not available for ${symbol}`);
     }
-    
+
     // 2. Check legacy cache for backward compatibility
     const legacyCached = cache.get(cacheKey);
     if (legacyCached) {
@@ -175,22 +211,24 @@ app.get('/api/analyze/:symbol', async (req, res) => {
     // 3. Try to get from database if available
     let result = null;
     if (dbService) {
+      logger.info(`[DEBUG] Checking database service for ${symbol}`);
       try {
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(endDate.getDate() - 50);
 
+        logger.info(`[DEBUG] Calling dbService.getStockAnalysisData for ${symbol}`);
         const analysisData = await dbService.getStockAnalysisData(symbol, startDate, endDate);
-        
+
         if (analysisData.ohlcv && analysisData.ohlcv.length > 0) {
           // Compute indicators from cached data
           const closes = analysisData.ohlcv.map(h => h.close);
           const rsi = calculateRSI(closes);
           const sma50 = calculateSMA50(closes);
-          
+
           if (rsi !== null && !isNaN(sma50)) {
             const currentPrice = analysisData.ohlcv[analysisData.ohlcv.length - 1].close;
-            
+
             result = {
               currentPrice: parseFloat(currentPrice.toFixed(2)),
               currency: analysisData.ohlcv[0]?.currency || 'USD',
@@ -211,9 +249,30 @@ app.get('/api/analyze/:symbol', async (req, res) => {
 
     // 4. Fetch from API if no cached/database data
     if (!result) {
-      const { analyzeSymbol } = await import('./lib/analyze.js');
-      result = await analyzeSymbol(symbol);
-      
+      logger.info(`[DEBUG] Attempting to import analyze.js for ${symbol}`);
+      try {
+        // Check if we're in a Jest environment that might interfere with imports
+        if (isJest) {
+          logger.warn(`[DEBUG] Jest environment detected, using alternative import for ${symbol}`);
+          // Try to require the module instead of dynamic import
+          const analyzeModule = await import('./lib/analyze.js');
+          const { analyzeSymbol } = analyzeModule;
+          logger.info(`[DEBUG] Successfully imported analyzeSymbol for ${symbol} in Jest`);
+          result = await analyzeSymbol(symbol);
+        } else {
+          const { analyzeSymbol } = await import('../lib/analyze.js');
+          logger.info(`[DEBUG] Successfully imported analyzeSymbol for ${symbol}`);
+          result = await analyzeSymbol(symbol);
+        }
+      } catch (importError) {
+        logger.error(`[DEBUG] Import failed for ${symbol}`, {
+          error: importError.message,
+          stack: importError.stack,
+          isJest: isJest
+        });
+        throw new Error(`Failed to import analysis module: ${importError.message}`);
+      }
+
       // 5. Save to database for future requests
       if (dbService && result.historical && result.historical.length > 0) {
         try {
@@ -222,7 +281,7 @@ app.get('/api/analyze/:symbol', async (req, res) => {
             name: `${symbol} Stock`,
             currency: result.currency || 'USD'
           });
-          
+
           // Save OHLCV data
           const ohlcvData = result.historical.map(h => ({
             date: new Date(h.date),
@@ -234,9 +293,9 @@ app.get('/api/analyze/:symbol', async (req, res) => {
             currency: result.currency || 'USD',
             data_source: 'YAHOO'
           }));
-          
+
           await dbService.saveOHLCV(symbol, ohlcvData);
-          
+
           // Save indicators
           await dbService.saveIndicators(symbol, [
             {
@@ -252,7 +311,7 @@ app.get('/api/analyze/:symbol', async (req, res) => {
               parameters: JSON.stringify({ period: 50 })
             }
           ]);
-          
+
           logger.debug(`Saved analysis data for ${symbol} to database`);
         } catch (error) {
           logger.error(`Failed to save analysis data for ${symbol}`, { error: error.message });
@@ -271,10 +330,15 @@ app.get('/api/analyze/:symbol', async (req, res) => {
       sma50: result.sma50,
       signal: result.signal
     });
-    
+
     res.json(result);
   } catch (error) {
-    logger.error(`Error analyzing ${symbol}`, { error: error.message, stack: error.stack });
+    logger.error(`Error analyzing ${symbol}`, {
+      error: error.message,
+      stack: error.stack,
+      symbol: symbol,
+      cacheKey: cacheKey
+    });
     let status = 500;
     let errorMsg = error.message || 'Internal server error';
 
@@ -293,7 +357,7 @@ app.get('/api/analyze/:symbol', async (req, res) => {
 // Currency conversion endpoint
 app.get('/api/currency/convert', async (req, res) => {
   const { from, to, amount } = req.query;
-  
+
   if (!from || !to || !amount) {
     return res.status(400).json({ error: 'Missing parameters: from, to, amount required' });
   }
@@ -320,24 +384,24 @@ app.get('/api/currency/convert', async (req, res) => {
 // Cleanup on server shutdown
 process.on('SIGINT', async () => {
   logger.info('Received SIGINT, shutting down gracefully...');
-  
+
   if (cacheManager) {
     await cacheManager.close();
   }
-  
+
   process.exit(0);
 });
 
 const server = app.listen(PORT, () => {
   logger.info(`Server running on http://localhost:${PORT}`);
   logger.info(`Environment: ${process.env.ENVIRONMENT || 'development'}`);
-  
+
   if (dbService) {
     logger.info('Database service: Enabled');
   } else {
     logger.info('Database service: Disabled (development mode)');
   }
-  
+
   if (cacheManager) {
     logger.info('Cache manager: Enabled');
   }

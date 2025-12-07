@@ -1,4 +1,4 @@
-import { Box, Card, CardHeader, CardBody, Heading, Input, Button, Flex, Text, Badge, useColorModeValue, Table, Thead, Tbody, Tr, Th, Td, TableContainer, SimpleGrid } from '@chakra-ui/react'
+import { Box, Card, CardHeader, CardBody, Heading, Input, Button, Flex, Badge, useColorModeValue, Table, Thead, Tbody, Tr, Th, Td, TableContainer, SimpleGrid } from '@chakra-ui/react'
 import { useState } from 'react'
 import { StockCard } from './StockCard'
 

@@ -4,7 +4,7 @@ import { useState } from 'react'
 export const AlertsCenter = () => {
   const [symbol, setSymbol] = useState('')
   const [threshold, setThreshold] = useState('')
-  const [alertType, setAlertType] = useState('price')
+  const [alertType] = useState('price')
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.200', 'gray.700')
 
@@ -181,4 +181,4 @@ export const AlertsCenter = () => {
   )
 }
 
-// Import SimpleGrid - need to add this import
+// Import SimpleGrid - already imported
