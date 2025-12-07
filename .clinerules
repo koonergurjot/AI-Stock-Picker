@@ -1,0 +1,14 @@
+# Project: AI Stock Picker
+- **Stack:** Node.js (Express), React (Vite/ChakraUI), SQLite (Dev) / Cloudflare D1 (Prod).
+- **Structure:** 
+  - /frontend -> React App (Port 3001)
+  - /src -> Backend Server (Port 3000)
+  - /lib -> Shared logic (Database, Analysis, Cache)
+  - /scripts -> Database migration tools
+
+# Development Rules
+1. **Running the App:** The backend must be started from the root (`npm run dev`). The frontend must be started from `/frontend` (`npm run dev`).
+2. **Database:** In development, we use SQLite (`database/data/ai-stock-picker.db`). 
+3. **Migrations:** Before fixing database errors, always check if `npm run migrate` has been run.
+4. **Imports:** We use ES Modules (`import`, not `require`). Ensure file extensions (.js) are included in local imports.
+5. **Environment:** Assume `ENVIRONMENT=development`.
